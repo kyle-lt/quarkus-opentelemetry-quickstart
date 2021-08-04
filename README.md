@@ -1,58 +1,72 @@
-# quarkus-opentelemetry-quickstart Project
+# quarkus-opentelemetry-quickstart
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+The goal of this project was to be able to utilize OpenTelemetry with as little work as possible, and also be able to configure the SDK with environment variables.  It was accomplished with very little effort.  Read on to see how!
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+This project was created based on the guide [here](https://quarkus.io/guides/opentelemetry).
+> You'll need to be running an OpenTelemetry Collector and some trace backend (I use Jaeger). [Here](https://github.com/kyle-lt/local-monitoring-stack) is my repo that I use to do that, or the Quarkus link has some instructions, too.
 
-## Running the application in dev mode
+Below, there is some documentation for the following topics:
+- [How to Build](#how-to-build)
+- [How to Run](#how-to-run)
+- [How the Goal was Accomplished](#how-the-goal-was-accomplished)
 
-You can run your application in dev mode that enables live coding using:
-```shell script
-./mvnw compile quarkus:dev
+## How to Build
+
+Tested on MacOS following the instructions [here](https://quarkus.io/guides/building-native-image)
+- Used SDKMAN for GraalVM
+
+Run the script `nativeBuild.sh`, perhaps tweak it to your environment - no guarantees, though.
+
+> Keep in mind that building on MacOS creates a MacOS-compliant native executable that won't run on Linux.
+
+The result is a native executable in the `target` directory.
+
+It'll be named something like `quarkus-opentelemetry-quickstart-1.0.0-SNAPSHOT-runner`.
+
+## How to Run
+
+Once the executable is built, it can be run with a helper script:
+
+```bash
+./runNativeImage.sh
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+Or, you can set the env vars manually, and then run the native executable directly.
 
-## Packaging and running the application
-
-The application can be packaged using:
-```shell script
-./mvnw package
-```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-If you want to build an _über-jar_, execute the following command:
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
+```bash
+./target/quarkus-opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
 ```
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+The Quarkus o/p will appear to std out. 
 
-## Creating a native executable
+Then, you can run a request:
 
-You can create a native executable using: 
-```shell script
-./mvnw package -Pnative
+```bash
+curl localhost:8080/hello
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
+Go and check Jaeger (or whatever trace backend) to see the result.
+
+## How the Goal was Accomplished
+
+As the documentation states, you'll need the `quarkus-opentelemetry-exporter-otlp` module, so make sure that's in the `pom.xml` if doing this from scratch.
+
+After that, the only requirement is to properly configure the OpenTelemetry SDK.  That piece was done in the `application.properties` file so that values could be provided by environment variables, and native image-friendly.
+
+Here is the content in `application.properties`:
+
+```bash
+# OpenTelemetry Configs - passed in via environment variables
+
+# OTLP Endpoint Address
+# For testing: OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+quarkus.opentelemetry.tracer.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT}
+
+# OTLP Resource Attributes
+# For testing: OTEL_RESOURCE_ATTRIBUTES=service.name=kjt-testServiceName,service.namespace=kjt-testServiceNamespaceName
+quarkus.opentelemetry.tracer.resource-attributes=${OTEL_RESOURCE_ATTRIBUTES}
 ```
 
-You can then execute your native executable with: `./target/quarkus-opentelemetry-quickstart-1.0.0-SNAPSHOT-runner`
+That's it, super easy!
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html.
 
-## Related Guides
-
-- RESTEasy JAX-RS ([guide](https://quarkus.io/guides/rest-json)): REST endpoint framework implementing JAX-RS and more
-
-## Provided Code
-
-### RESTEasy JAX-RS
-
-Easily start your RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)
